@@ -1,194 +1,209 @@
 <!DOCTYPE html>
-<html lang="en">
-	<head>
-		<meta charset="UTF-8" />
-		<title>heart</title>
-		<meta name="language" content="zh-CN" />
-		<meta name="title" content="mnshhhh" />
-		<meta
-			name="github"
-			content="https://github.com/sun0225SUN/Awesome-Love-Code"
-		/>
-		<meta
-			name="describe"
-			content="收集不易，您的star是我坚持的动力，同时也欢迎各位PR哦! "
-		/>
-		<link
-			rel="icon"
-			type="image/x-icon"
-			href="https://cdn.jsdelivr.net/gh/sun0225SUN/photos/img/20210715233345.png"
-		/>
-		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-		<style>
-			* {
-				padding: 0;
-				margin: 0;
-			}
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>微信登录 - 企业服务号</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://res.wx.qq.com/open/js/jweixin-1.6.0.js"></script>
+</head>
+<body>
+    <div class="login-container" id="loginContainer">
+        <div class="logo-area">
+            <div class="logo"></div>
+            <h1>企业服务平台</h1>
+            <p>请登录您的账号</p>
+        </div>
+        
+        <div class="form-area">
+            <div class="input-group">
+                <input type="text" id="username" placeholder="请输入账号" required>
+            </div>
+            <div class="input-group">
+                <input type="password" id="password" placeholder="请输入密码" required>
+            </div>
+            <button id="loginBtn" class="login-btn">登录</button>
+            
+            <div class="wechat-quick-login" id="wechatQuickLogin">
+                <p>或者使用微信一键登录</p>
+                <button id="wechatLoginBtn" class="wechat-btn">
+                    <span class="wechat-icon"></span>
+                    微信一键登录
+                </button>
+            </div>
+        </div>
+    </div>
 
-			body {
-				background-color: pink;
-			}
+    <script>
+        // 微信授权配置
+        const WECHAT_CONFIG = {
+            // 替换为实际的公众号AppID
+            appId: 'gh_82da0c6143e6',
+            // 授权回调域名（必须备案且已在微信公众号后台配置）
+            redirectUri: encodeURIComponent('http://localhost:8000'),
+            // 授权作用域，snsapi_base为静默授权
+            scope: 'snsapi_base'
+        };
 
-			#frame {
-				position: relative;
-				width: 400px;
-				height: 300px;
-				margin: 250px auto;
-			}
+        // 页面加载时检查URL中的code参数
+        document.addEventListener('DOMContentLoaded', function() {
+            // 从URL中获取code参数
+            const urlParams = new URLSearchParams(window.location.search);
+            const code = urlParams.get('code');
+            const state = urlParams.get('state');
+            
+            if (code) {
+                // 已获取到code，进行后续处理
+                handleWechatAuthSuccess(code, state);
+            } else {
+                // 未获取到code，检查是否需要授权
+                checkAuthStatus();
+            }
 
-			.left,
-			.right {
-				top: 0;
-				width: 200px;
-				height: 200px;
-				border-radius: 50%;
-			}
+            // 绑定登录按钮事件
+            document.getElementById('loginBtn').addEventListener('click', handleManualLogin);
+            document.getElementById('wechatLoginBtn').addEventListener('click', redirectToWechatAuth);
+        });
 
-			.left {
-				left: 35px;
-			}
+        // 检查授权状态
+        function checkAuthStatus() {
+            // 可以检查本地存储中是否已有授权信息
+            const hasAuth = localStorage.getItem('wechat_auth');
+            
+            if (!hasAuth) {
+                // 如果没有授权信息，可以选择自动跳转授权或者让用户点击按钮授权
+                console.log('未检测到微信授权信息');
+            }
+        }
 
-			.right {
-				right: 35px;
-				z-index: -1;
-			}
+        // 重定向到微信授权页面
+        function redirectToWechatAuth() {
+            // 生成随机state参数防止CSRF攻击
+            const state = 'state_' + Math.random().toString(36).substring(2, 15);
+            localStorage.setItem('wechat_auth_state', state);
+            
+            // 构造授权URL
+            const authUrl = `https://open.weixin.qq.com/connect/oauth2/authorize?appid=${WECHAT_CONFIG.appId}&redirect_uri=${WECHAT_CONFIG.redirectUri}&response_type=code&scope=${WECHAT_CONFIG.scope}&state=${state}#wechat_redirect`;
+            
+            console.log('即将跳转到微信授权页面:', authUrl);
+            window.location.href = authUrl;
+        }
 
-			.bottom {
-				bottom: 36px;
-				left: 100px;
-				width: 200px;
-				height: 200px;
-				transform: rotate(45deg);
-				z-index: -1;
-			}
+        // 处理微信授权成功返回
+        function handleWechatAuthSuccess(code, state) {
+            // 首先在控制台打印用户的code
+            console.log('授权后的用户code:', code);
+            
+            // 验证state参数，防止CSRF攻击
+            const savedState = localStorage.getItem('wechat_auth_state');
+            if (savedState !== state) {
+                console.error('state参数验证失败，可能是CSRF攻击');
+                return;
+            }
+            
+            // 清除state参数
+            localStorage.removeItem('wechat_auth_state');
+            
+            // 在控制台打印用户的code信息
+            console.log('用户的微信授权code:', code);
+            
+            // 调用后端API，使用code换取openid和session_key
+            // 这里需要替换为实际的后端API地址
+            const apiUrl = 'https://your-api.com/wechat/auth';
+            
+            fetch(apiUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    code: code
+                })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('网络响应错误');
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log('微信授权处理结果:', data);
+                
+                // 存储授权信息
+                localStorage.setItem('wechat_auth', JSON.stringify(data));
+                
+                // 显示登录成功提示
+                showToast('微信授权成功');
+                
+                // 可以根据后端返回的信息决定是否需要进一步登录
+                if (data.needLogin) {
+                    // 需要进一步登录
+                    console.log('需要进行账号绑定或二次登录');
+                } else {
+                    // 直接登录成功
+                    setTimeout(() => {
+                        window.location.href = '/home.html';
+                    }, 1500);
+                }
+            })
+            .catch(error => {
+                console.error('微信授权处理失败:', error);
+                showToast('微信授权失败，请重试');
+            });
+        }
 
-			.heart {
-				position: absolute;
-				box-shadow: 0 0 40px #d5093c;
-				animation: beat 0.4s ease infinite normal;
-				background: linear-gradient(-90deg, #f50a45 0%, #d5093c 40%);
-			}
+        // 处理手动登录
+        function handleManualLogin() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            if (!username || !password) {
+                showToast('请输入账号和密码');
+                return;
+            }
+            
+            // 模拟登录请求
+            console.log('正在登录...', { username });
+            
+            // 显示加载状态
+            const loginBtn = document.getElementById('loginBtn');
+            loginBtn.disabled = true;
+            loginBtn.textContent = '登录中...';
+            
+            // 模拟API请求延迟
+            setTimeout(() => {
+                // 模拟登录成功
+                showToast('登录成功');
+                
+                // 跳转到首页
+                setTimeout(() => {
+                    window.location.href = '/home.html';
+                }, 1500);
+            }, 1500);
+        }
 
-			@keyframes beat {
-				0% {
-					transform: scale(1) rotate(225deg);
-					box-shadow: 0 0 40px #d5093c;
-				}
-
-				50% {
-					transform: scale(1.1) rotate(225deg);
-					box-shadow: 0 0 70px #d5093c;
-				}
-
-				100% {
-					transform: scale(1) rotate(225deg);
-					box-shadow: 0 0 40px #d5093c;
-				}
-			}
-
-			.word {
-				position: absolute;
-				width: 50%;
-				top: 75%;
-				left: 25%;
-				text-align: center;
-				transform: translateY(-50%);
-				font-family: "Love Ya Like A Sister", cursive;
-				font-size: 40px;
-				color: #c70012;
-				padding: 0 20px;
-			}
-		</style>
-	</head>
-
-	<body>
-		<div id="frame">
-			<div class="heart left"></div>
-			<div class="heart right"></div>
-			<div class="heart bottom"></div>
-		</div>
-
-		<b class="word">华哥为你心动!</b>
-
-		<audio autoplay="autopaly" loop="loop" id="audios" preload="auto">
-			<source
-				src="http://music.163.com/song/media/outer/url?id=526464145.mp3"
-			/>
-		</audio>
-
-		<script>
-			var b = document.body;
-			var c = document.getElementsByTagName("canvas")[0];
-			var a = c.getContext("2d");
-			document.body.clientWidth;
-			with ((m = Math)) (C = cos), (S = sin), (P = pow), (R = random);
-			c.width = c.height = f = 600;
-			h = -250;
-			function p(a, b, c) {
-				if (c > 60)
-					return [
-						S(a * 7) * (13 + 5 / (0.2 + P(b * 4, 4))) - S(b) * 50,
-						b * f + 50,
-						625 + C(a * 7) * (13 + 5 / (0.2 + P(b * 4, 4))) + b * 400,
-						a * 1 - b / 2,
-						a,
-					];
-				A = a * 2 - 1;
-				B = b * 2 - 1;
-				if (A * A + B * B < 1) {
-					if (c > 37) {
-						n = (j = c & 1) ? 6 : 4;
-						o = 0.5 / (a + 0.01) + C(b * 125) * 3 - a * 300;
-						w = b * h;
-						return [
-							o * C(n) + w * S(n) + j * 610 - 390,
-							o * S(n) - w * C(n) + 550 - j * 350,
-							1180 + C(B + A) * 99 - j * 300,
-							0.4 -
-								a * 0.1 +
-								P(1 - B * B, -h * 6) * 0.15 -
-								a * b * 0.4 +
-								C(a + b) / 5 +
-								P(C((o * (a + 1) + (B > 0 ? w : -w)) / 25), 30) *
-									0.1 *
-									(1 - B * B),
-							o / 1e3 + 0.7 - o * w * 3e-6,
-						];
-					}
-					if (c > 32) {
-						c = c * 1.16 - 0.15;
-						o = a * 45 - 20;
-						w = b * b * h;
-						z = o * S(c) + w * C(c) + 620;
-						return [
-							o * C(c) - w * S(c),
-							28 + C(B * 0.5) * 99 - b * b * b * 60 - z / 2 - h,
-							z,
-							(b * b * 0.3 + P(1 - A * A, 7) * 0.15 + 0.3) * b,
-							b * 0.7,
-						];
-					}
-					o = A * (2 - b) * (80 - c * 2);
-					w =
-						99 -
-						C(A) * 120 -
-						C(b) * (-h - c * 4.9) +
-						C(P(1 - b, 7)) * 50 +
-						c * 2;
-					z = o * S(c) + w * C(c) + 700;
-					return [
-						o * C(c) - w * S(c),
-						B * 99 - C(P(b, 7)) * 50 - c / 3 - z / 1.35 + 450,
-						z,
-						(1 - b / 1.2) * 0.9 + a * 0.1,
-						P(1 - b, 20) / 4 + 0.05,
-					];
-				}
-			}
-			setInterval(
-				'for(i=0;i<1e4;i++)if(s=p(R(),R(),i%46/.74)){z=s[2];x=~~(s[0]*f/z-h);y=~~(s[1]*f/z-h);if(!m[q=y*f+x]|m[q]>z)m[q]=z,a.fillStyle="rgb("+~(s[3]*h)+","+~(s[4]*h)+","+~(s[3]*s[3]*-80)+")",a.fillRect(x,y,1,1)}',
-				0
-			);
-		</script>
-	</body>
+        // 显示提示消息
+        function showToast(message) {
+            // 创建toast元素
+            let toast = document.getElementById('toast');
+            if (!toast) {
+                toast = document.createElement('div');
+                toast.id = 'toast';
+                toast.className = 'toast';
+                document.body.appendChild(toast);
+            }
+            
+            // 设置消息内容
+            toast.textContent = message;
+            
+            // 显示toast
+            toast.classList.add('show');
+            
+            // 2秒后隐藏
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 2000);
+        }
+    </script>
+</body>
 </html>
