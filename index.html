@@ -114,14 +114,16 @@
             exchangeBtn.textContent = '请求中...';
             
             // 实际的后端API地址
-            const apiUrl = 'https://xpert.bytedance.com/user/wechat/bind_status';
+            const apiUrl = 'https://xpert-boe.bytedance.net/user/wechat/bind_status';
             
             fetch(apiUrl, {
                 method: 'POST',
                 mode: 'cors', // 使用CORS模式
                 headers: {
                     'Content-Type': 'application/json',
-                    'Accept': 'application/json'
+                    'Accept': 'application/json',
+                    'Access-Control-Allow-Origin': '*',
+                    'x-tt-env': 'boe_xpert_wechat_service_setup'
                 },
                 body: JSON.stringify({ code: code })
             })
@@ -158,16 +160,6 @@
                 
                 // 即使失败也生成模拟数据
                 showToast('遇到跨域问题，使用模拟数据继续');
-                
-                // 模拟成功响应
-                const mockResponse = {
-                    openid: 'mock_openid_' + Math.random().toString(36).substring(2, 15)
-                };
-                
-                console.log('使用模拟数据:', mockResponse);
-                
-                // 存储模拟的OpenID信息
-                localStorage.setItem('wechat_openid', mockResponse.openid);
                 
                 // 恢复按钮状态
                 exchangeBtn.disabled = false;
