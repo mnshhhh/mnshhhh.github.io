@@ -39,13 +39,20 @@
             // 替换为实际的公众号AppID
             appId: 'wxe55515e7e5a6f61a',
             // 授权回调域名（必须备案且已在微信公众号后台配置）
-            redirectUri: encodeURIComponent('https://mnshhhh.github.io'),
+            redirectUri: encodeURIComponent('https://mnshhhh.github.io?data=1'),
             // 授权作用域，snsapi_base为静默授权
             scope: 'snsapi_base'
         };
 
         // 页面加载时绑定事件
         document.addEventListener('DOMContentLoaded', function() {
+            // 检测是否在微信客户端环境中
+            const isWechatBrowser = /MicroMessenger/i.test(navigator.userAgent);
+             console.log('当前环境：navigator.userAgent', isWechatBrowser ? '微信客户端' : '当前环境：非微信客户端');
+            if (isWechatBrowser) {
+                console.log('当前环境：微信客户端');
+            }
+            
             // 绑定按钮事件
             document.getElementById('agreementCheckbox').addEventListener('change', handleAgreementChange);
             document.getElementById('getCodeBtn').addEventListener('click', handleGetCode);
@@ -114,14 +121,12 @@
             exchangeBtn.textContent = '请求中...';
             
             // 实际的后端API地址
-            const apiUrl = 'https://xpert-boe.bytedance.net/user/wechat/bind_status';
+            const apiUrl = 'https://aidp-lite-boe.bytedance.net/user/wechat/bind_status';
             
             fetch(apiUrl, {
                 method: 'POST',
                 mode: 'cors', // 使用CORS模式
                 headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json',
                     'Access-Control-Allow-Origin': '*',
                     'x-tt-env': 'boe_xpert_wechat_service_setup'
                 },
